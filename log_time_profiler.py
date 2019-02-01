@@ -179,7 +179,7 @@ class LogTimeProfiler:
                 print(current)
             if print_end:
                 print('-' * 80)
-            if self.command_count == self.test_count:
+            if self.command and self.command_count == self.test_count:
                 break
 
         print('=' * 10, self.TITLE, 'Summary', '=' * 10)
