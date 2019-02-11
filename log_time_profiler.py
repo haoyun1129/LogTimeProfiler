@@ -9,6 +9,7 @@ from threading import Timer
 import matplotlib.pyplot as plt
 import numpy as np
 import configparser
+import matplotlib.mlab as mlab
 
 if sys.version_info[0] < 3:
     raise Exception("Python 3 or a more version is required.")
@@ -59,13 +60,18 @@ class LogTimeProfiler:
 
     def show_plot(self, hist):
         plt.clf()
+        mu = np.mean(hist)
+        sigma = np.std(hist)
+        plt.suptitle(self.TITLE + r' - {} times, $\mu={:.2f}$, $\sigma={:.2f}$'.format(len(hist), mu, sigma))
 
         axes = plt.subplot(2, 1, 1)
-        plt.suptitle(self.TITLE + ' - {} times'.format(len(hist)))
         plt.xlabel('Response Time (seconds)')
         plt.ylabel('Times')
-        plt.hist(hist)
+        n, bins, patches = plt.hist(hist, bins='auto', normed=1)
         axes.set_xlim(self.XLIM_LEFT, self.XLIM_RIGHT)
+
+        y = mlab.normpdf(bins, mu, sigma)
+        plt.plot(bins, y, '--')
         axes = plt.subplot(2, 1, 2)
         pie_dist = []
         labels = []
