@@ -50,6 +50,8 @@ class LogTimeProfiler:
         self.measure_started = False
         self.line = ''
         self.test_count = 0
+        self.log_output = None
+        self.output_file = None
 
     @staticmethod
     def parse_time(time_string):
@@ -105,6 +107,7 @@ class LogTimeProfiler:
         parser.add_argument('--xliml', help='The left xlim in data coordinates', type=float)
         parser.add_argument('--xlimr', help='The right xlim in data coordinates', type=float)
         parser.add_argument('--config', help='Config INI file')
+        parser.add_argument('--output', help='Record log')
         parser.add_argument('file', metavar='FILE', help='files to read, if empty, stdin is used')
         args = parser.parse_args()
 
@@ -122,14 +125,18 @@ class LogTimeProfiler:
             self.XLIM_RIGHT = args.xlimr
         if not args.run_command:
             self.command = None
+        if args.output:
+            self.log_output = args.output
 
         self.verbose = args.verbose
         self.UPDATE_ON_THE_FLY = args.fly
+        if self.log_output:
+            self.output_file = open(self.log_output, 'w')
 
         self.run_command()
-        line_no = 0
         for line in fileinput.input(args.file, openhook=fileinput.hook_encoded(self.ENCODING)):
             line = line.strip()
+            line_no = fileinput.lineno()
             self.line = line
             print_log = False
             print_current = False
@@ -161,15 +168,14 @@ class LogTimeProfiler:
                     self.action_timer = Timer(self.command_delay / 1000.0, self.run_command, [True])
                     self.action_timer.start()
 
-                line_no = fileinput.lineno()
                 if current < 0:
-                    print(line_no, line)
+                    self.print_log(line_no, line)
                     continue
                 if self.range_min and current < self.range_min:
-                    print(line_no, line)
+                    self.print_log(line_no, line)
                     continue
                 if self.range_max and current > self.range_max:
-                    print(line_no, line)
+                    self.print_log(line_no, line)
                     continue
                 print_current = True
                 print_end = True
@@ -180,21 +186,21 @@ class LogTimeProfiler:
                     self.show_plot(hist)
 
             if self.verbose and print_log:
-                print(line_no, current, line)
+                self.print_log(line_no, self.t_current - self.t_request, line)
             if print_current:
-                print(current)
+                self.print_log(current)
             if print_end:
-                print('-' * 80)
+                self.print_log('-' * 80)
             if self.command and self.command_count == self.test_count:
                 break
 
-        print('=' * 10, self.TITLE, 'Summary', '=' * 10)
-        print('Result Count: {}'.format(len(hist)))
-        print('Benchmark: max = {}, min = {}, mean = {:.2f}, std = {:.2f}, mode = {:.2f}'.format(max(hist), min(hist),
+        self.print_log('=' * 10, self.TITLE, 'Summary', '=' * 10)
+        self.print_log('Result Count: {}'.format(len(hist)))
+        self.print_log('Benchmark: max = {}, min = {}, mean = {:.2f}, std = {:.2f}, mode = {:.2f}'.format(max(hist), min(hist),
                                                                                                  np.mean(hist),
                                                                                                  np.std(hist),
                                                                                                  np.median(hist)))
-        print(hist)
+        self.print_log(hist)
         self.show_plot(hist)
         plt.show()
 
@@ -211,8 +217,12 @@ class LogTimeProfiler:
                 self.command_count = int(trigger['COUNT'])
         self.MEASURE_START = config['MEASURE']['START']
         self.MEASURE_END = config['MEASURE']['END']
-        for k, v in config['PRINT'].items():
-            self.PRINT_PATTERN.append(v)
+
+        if 'PRINT' in config:
+            for k, v in config['PRINT'].items():
+                self.PRINT_PATTERN.append(v)
+            if 'LOG_OUTPUT' in config['PRINT']:
+                self.log_output = config['PRINT']['LOG_OUTPUT']
         for k, v in config['CHART'].items():
             if k.startswith('threshold'):
                 self.thresholds.append(int(v))
@@ -231,6 +241,11 @@ class LogTimeProfiler:
                 self.t_current = LogTimeProfiler.parse_time(self.line)
                 self.t_request = self.t_current
                 self.t_session_start = self.t_current
+
+    def print_log(self, *objects):
+        print(*objects)
+        if self.output_file:
+            self.output_file.write(' '.join([str(e) for e in objects]) + '\n')
 
 
 if __name__ == '__main__':
