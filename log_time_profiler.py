@@ -58,6 +58,8 @@ class LogTimeProfiler:
         time_string = time_string[:14]  # len("01-09 12:23:36") = 14
         # print(time_string, type(time_string))
         result = time.strptime(time_string, '%m-%d %H:%M:%S')
+        if result.tm_year == 1900:  # Fix ValueError on Windows
+            result = time.struct_time((1970,) + result[1:])
         return time.mktime(result)
 
     def show_plot(self, hist):
@@ -78,10 +80,10 @@ class LogTimeProfiler:
         pie_dist = []
         labels = []
         for i in range(len(self.thresholds) - 1):
-            count = [self.thresholds[i] < v <= self.thresholds[i+1] for v in hist].count(True)
+            count = [self.thresholds[i] < v <= self.thresholds[i + 1] for v in hist].count(True)
             if count > 0:
-                pie_dist.append([self.thresholds[i] < v <= self.thresholds[i+1] for v in hist].count(True))
-                labels.append("{}~{}".format(self.thresholds[i], self.thresholds[i+1]))
+                pie_dist.append([self.thresholds[i] < v <= self.thresholds[i + 1] for v in hist].count(True))
+                labels.append("{}~{}".format(self.thresholds[i], self.thresholds[i + 1]))
 
         plt.pie(pie_dist, autopct='%1.1f%%',
                 labels=labels,
@@ -196,10 +198,11 @@ class LogTimeProfiler:
 
         self.print_log('=' * 10, self.TITLE, 'Summary', '=' * 10)
         self.print_log('Result Count: {}'.format(len(hist)))
-        self.print_log('Benchmark: max = {}, min = {}, mean = {:.2f}, std = {:.2f}, mode = {:.2f}'.format(max(hist), min(hist),
-                                                                                                 np.mean(hist),
-                                                                                                 np.std(hist),
-                                                                                                 np.median(hist)))
+        self.print_log(
+            'Benchmark: max = {}, min = {}, mean = {:.2f}, std = {:.2f}, mode = {:.2f}'.format(max(hist), min(hist),
+                                                                                               np.mean(hist),
+                                                                                               np.std(hist),
+                                                                                               np.median(hist)))
         self.print_log(hist)
         self.show_plot(hist)
         plt.show()
