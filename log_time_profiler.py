@@ -9,7 +9,7 @@ from threading import Timer
 import matplotlib.pyplot as plt
 import numpy as np
 import configparser
-import matplotlib.mlab as mlab
+import scipy.stats as stats
 
 if sys.version_info[0] < 3:
     raise Exception("Python 3 or a more version is required.")
@@ -68,15 +68,22 @@ class LogTimeProfiler:
         sigma = np.std(hist)
         plt.suptitle(self.TITLE + r' - {} times, $\mu={:.2f}$, $\sigma={:.2f}$'.format(len(hist), mu, sigma))
 
-        axes = plt.subplot(2, 1, 1)
+        axes = plt.subplot(3, 1, 1)
         plt.xlabel('Response Time (seconds)')
         plt.ylabel('Times')
-        n, bins, patches = plt.hist(hist, bins='auto', normed=1)
-        axes.set_xlim(self.XLIM_LEFT, self.XLIM_RIGHT)
+        n, bins, patches = plt.hist(hist)
+        y = stats.norm.pdf(bins, mu, sigma)
+        plt.plot(bins, y, '--', label='norm pdf')
 
-        y = mlab.normpdf(bins, mu, sigma)
-        plt.plot(bins, y, '--')
-        axes = plt.subplot(2, 1, 2)
+        # axes.set_xlim(self.XLIM_LEFT, self.XLIM_RIGHT)
+
+        axes = plt.subplot(3, 1, 2)
+        plt.xlabel('Iteration')
+        plt.ylabel('Response Time (seconds)')
+
+        plt.scatter(range(len(hist)), hist)
+
+        axes = plt.subplot(3, 1, 3)
         pie_dist = []
         labels = []
         for i in range(len(self.thresholds) - 1):
