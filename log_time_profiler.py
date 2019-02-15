@@ -72,8 +72,8 @@ class LogTimeProfiler:
         plt.xlabel('Response Time (seconds)')
         plt.ylabel('Times')
         n, bins, patches = plt.hist(hist)
-        y = stats.norm.pdf(bins, mu, sigma)
-        plt.plot(bins, y, '--', label='norm pdf')
+        # y = stats.norm.pdf(bins, mu, sigma)
+        # plt.plot(bins, y, '--', label='norm pdf')
 
         # axes.set_xlim(self.XLIM_LEFT, self.XLIM_RIGHT)
 
