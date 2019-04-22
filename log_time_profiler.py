@@ -51,6 +51,7 @@ class LogTimeProfiler:
         self.test_count = 0
         self.log_output = None
         self.output_file = None
+        self.config = 'config.ini'
 
     @staticmethod
     def parse_time(time_string):
@@ -98,8 +99,6 @@ class LogTimeProfiler:
         hist = []
         current = 0
 
-        self.read_config_file()
-
         parser = argparse.ArgumentParser()
 
         parser.add_argument('--title', help='set the plot title')
@@ -132,6 +131,10 @@ class LogTimeProfiler:
             self.command = None
         if args.output:
             self.log_output = args.output
+        if args.config:
+            self.config = args.config
+
+        self.read_config_file()
 
         self.verbose = args.verbose
         self.UPDATE_ON_THE_FLY = args.fly
@@ -165,7 +168,8 @@ class LogTimeProfiler:
                 self.t_current = LogTimeProfiler.parse_time(line)
                 self.t_response = self.t_current
                 print_log = True
-                current = self.t_response - self.t_request
+
+                current = round(self.t_response - self.t_request, 2)
                 print(self.command, self.command_delay)
                 if self.command and self.command_delay:
                     if self.action_timer:
@@ -184,7 +188,7 @@ class LogTimeProfiler:
                     continue
                 print_current = True
                 print_end = True
-                hist.append(int(current))
+                hist.append(current)
                 self.test_count += 1
 
                 if self.UPDATE_ON_THE_FLY:
@@ -212,7 +216,7 @@ class LogTimeProfiler:
 
     def read_config_file(self):
         config = configparser.ConfigParser()
-        config.read('config.ini')
+        config.read(self.config)
         if 'TRIGGER' in config:
             trigger = config['TRIGGER']
             if 'COMMAND' in trigger:
