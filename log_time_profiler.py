@@ -2,14 +2,13 @@
 import fileinput
 import argparse
 import sys
-import time
 import subprocess
 from threading import Timer
 
 import matplotlib.pyplot as plt
 import numpy as np
 import configparser
-import scipy.stats as stats
+from datetime import datetime
 
 if sys.version_info[0] < 3:
     raise Exception("Python 3 or a more version is required.")
@@ -55,12 +54,9 @@ class LogTimeProfiler:
 
     @staticmethod
     def parse_time(time_string):
-        time_string = time_string[:14]  # len("01-09 12:23:36") = 14
-        # print(time_string, type(time_string))
-        result = time.strptime(time_string, '%m-%d %H:%M:%S')
-        if result.tm_year == 1900:  # Fix ValueError on Windows
-            result = time.struct_time((1970,) + result[1:])
-        return time.mktime(result)
+        time_string = time_string[:18]  # len("01-09 12:23:36.123") = 18
+        dt_obj = datetime.strptime(time_string, '%m-%d %H:%M:%S.%f')
+        return dt_obj.timestamp()
 
     def show_plot(self, hist):
         plt.clf()
